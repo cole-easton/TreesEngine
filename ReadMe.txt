@@ -1,0 +1,1 @@
+As my additional feature, I added a specular map to the shader.  In BasicLightingPixelShader.hlsl it is called RoughnessTexture, then I sample the red channel of my roughness map, subtract it from 1, then use this value to scale the result of the specular calculation.  It's easier to see on the metal hatch texture; the metal parts are shinier.
