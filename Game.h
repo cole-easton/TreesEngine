@@ -79,11 +79,12 @@ private:
 	DirectX::XMFLOAT3 ambientColor;
 
 	// Initialization helper methods - feel free to customize, combine, etc.
+	void TestLSystem();
 	void LoadShaders(); 
 	void CreateBasicGeometry();
 	void SetLights();
 	void ResizeOnePostProcessResource(Microsoft::WRL::ComPtr<ID3D11RenderTargetView>& rtv, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& srv);
-	void CreatePerturbations();
+	void replaceAll(std::string& str, const std::string& from, const std::string& to);
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the

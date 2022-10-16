@@ -6,6 +6,8 @@
 #include "Lights.h"
 #include "Sphere.h"
 #include "WICTextureLoader.h"
+#include "LSpecies.h"
+#include <iostream>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -85,7 +87,19 @@ void Game::Init()
 	bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	device->CreateBlendState(&bd, &transparencyBlendState);
+
+	TestLSystem();
 }
+
+void Game::TestLSystem() {
+	LSpecies species1 = LSpecies([this](std::string rule) {
+		this->replaceAll(rule, "X", "F[-FX][+FX]");
+		return rule;
+		}, std::string("X"), 30.f, 30.f, 0.4f, 0.8f, 1.f, 0.8f);
+
+	printf(species1.Grow(10).c_str());
+}
+
 
 // --------------------------------------------------------
 // Loads shaders from compiled shader object (.cso) files
@@ -209,6 +223,18 @@ void Game::OnResize()
 	ResizeOnePostProcessResource(gammaCorrectionRTV, gammaCorrectionSRV);
 }
 
+//stackoverflow.com/questions/3418231/replace-part-of-a-string-with-another-string
+void Game::replaceAll(std::string& str, const std::string& from, const std::string& to) {
+	if (from.empty())
+		return;
+	size_t start_pos = 0;
+	std::string result;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();
+	}
+}
+
 // Adapted from code by Chris Casciolli 
 // https ://github.com/vixorien/ggp-demos/blob/main/16%20-%20Bloom%20Post%20Process/Game.cpp
 void Game::ResizeOnePostProcessResource(
@@ -244,6 +270,7 @@ void Game::ResizeOnePostProcessResource(
 	//null description gives srv access to the whole resource
 	device->CreateShaderResourceView(ppTexture.Get(), 0, srv.ReleaseAndGetAddressOf());
 }
+
 
 // --------------------------------------------------------
 // Update your game here - user input, move objects, AI, etc.
@@ -316,40 +343,3 @@ void Game::Draw(float deltaTime, float totalTime)
 	// the render target must be re-bound after every call to Present()
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
 }
-
-//void Game::CreatePerturbations() {
-//	D3D11_VIEWPORT vp = {};
-//	vp.Width = width;
-//	vp.Height = height;
-//	vp.MaxDepth = 1.0f;
-//	context->RSSetViewports(1, &vp);
-//
-//	context->OMSetRenderTargets(1, refractionRTV.GetAddressOf(), 0);
-//
-//
-//	perturbationShader->SetShader();
-//	perturbationShader->SetShaderResourceView("Pixels", refractionSRV.Get());
-//
-//	std::vector<Sphere> spheres;
-//	XMMATRIX proj = XMLoadFloat4x4(&(camera->GetProjectionMatrix()));
-//	XMMATRIX view = XMLoadFloat4x4(&(camera->GetViewMatrix()));
-//	for (int i = 0; i < meshEntities.size(); i++) {
-//		XMMATRIX world = XMLoadFloat4x4(&(meshEntities[i]->GetTransform()->GetWorldMatrix()));
-//		XMMATRIX wvp = XMMatrixMultiply(proj, XMMatrixMultiply(view, world));
-//		Sphere sphere = {};
-//		//XMStoreFloat2(&(sphere.Position), XMVector4Transform(XMLoadFloat4(&(meshEntities[i]->GetTransform()->GetPosition())), wvp));
-//		XMVECTOR pos;
-//		XMVECTOR rot;
-//		XMVECTOR scale;
-//		XMMatrixDecompose(&scale, &rot, &pos, wvp);
-//		XMStoreFloat2(&(sphere.Position), pos);
-//		XMStoreFloat(&(sphere.Radius), scale);
-//		sphere.Roughness = meshEntities[i]->GetMaterial()->GetRoughness();
-//		spheres.push_back(sphere);
-//	}
-//	perturbationShader->SetData("spheres", &spheres[0], sizeof(Sphere) * (int)spheres.size());
-//	perturbationShader->CopyAllBufferData();
-//
-//	// Draw exactly 3 vertices for our "full screen triangle"
-//	context->Draw(3, 0);
-//}
