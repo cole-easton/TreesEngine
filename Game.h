@@ -43,16 +43,12 @@ private:
 
 	std::shared_ptr<Camera> camera;
 
-	Mesh* sphereMesh;
 	Mesh* cubeMesh;
-	Mesh* helixMesh;
+	Mesh* tree1Mesh;
 
 	SkyBox* skyBox;
 
-	std::shared_ptr<MeshEntity> sphere1;
-	std::shared_ptr<MeshEntity> sphere2;
-	std::shared_ptr<MeshEntity> cube;
-	std::shared_ptr<MeshEntity> helix;
+	std::shared_ptr<MeshEntity> tree1instance1;
 
 	std::vector<std::shared_ptr<MeshEntity>> meshEntities;
 

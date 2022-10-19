@@ -109,9 +109,6 @@
     <FxCompile Include="VertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="FunkyPixelShader.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="BasicLightingPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

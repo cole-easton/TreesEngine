@@ -49,9 +49,8 @@ Game::~Game()
 {
 	delete metalHatchMaterial;
 	delete transparentMaterial;
-	delete sphereMesh;
 	delete cubeMesh;
-	delete helixMesh;
+	delete tree1Mesh;
 	delete skyBox;
 }
 
@@ -66,6 +65,7 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateBasicGeometry();
+	TestLSystem();
 	SetLights();
 	camera = std::make_shared<Camera>(Transform(0, 0, -10, 0, 0, 0, 1, 1, 1), (float)this->width / this->height);
 	ambientColor = XMFLOAT3(0.15f, 0.15f, 0.25f);
@@ -87,17 +87,20 @@ void Game::Init()
 	bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	device->CreateBlendState(&bd, &transparencyBlendState);
-
-	TestLSystem();
 }
 
 void Game::TestLSystem() {
-	LSpecies species1 = LSpecies([this](std::string rule) {
+	LSpecies* species1 = new LSpecies([this](std::string rule) {
 		this->replaceAll(rule, "X", "F[-FX][+FX]");
 		return rule;
 		}, std::string("X"), 30.f, 30.f, 0.4f, 0.8f, 1.f, 0.8f);
-
-	printf(species1.Grow(10).c_str());
+	std::string rule = species1->Grow(10);
+	printf(rule.c_str());
+	tree1Mesh = species1->Build("F", device, context);
+	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, transparentMaterial);
+	tree1instance1->GetTransform()->SetPosition(0, 0, 0);
+	meshEntities.push_back(tree1instance1);
+	delete species1;
 }
 
 
@@ -188,22 +191,7 @@ void Game::CreateBasicGeometry()
 	metalHatchMaterial->AddTextureSRV("MetalnessMap", metalHatchMetalness);
 	metalHatchMaterial->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
 	
-	sphereMesh = new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context);
 	cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
-	helixMesh = new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device, context);
-
-	sphere1 = std::make_shared<MeshEntity>(sphereMesh, transparentMaterial);
-	sphere1->GetTransform()->SetPosition(-6, 0, 0);
-	cube = std::make_shared<MeshEntity>(cubeMesh, metalHatchMaterial);
-	cube->GetTransform()->SetPosition(-2, 0, 0);
-	helix = std::make_shared<MeshEntity>(helixMesh, transparentMaterial);
-	helix->GetTransform()->SetPosition(2, 0, 0);
-	sphere2 = std::make_shared<MeshEntity>(sphereMesh, transparentMaterial);
-	sphere2->GetTransform()->SetPosition(6, 0, 0);
-	meshEntities.push_back(sphere1);
-	meshEntities.push_back(cube);
-	meshEntities.push_back(helix);
-	meshEntities.push_back(sphere2);
 
 	skyBox = new SkyBox(cubeMesh, skyBoxTex, skyBoxVertexShader, skyBoxPixelShader, samplerState, device);
 }
@@ -317,22 +305,19 @@ void Game::Draw(float deltaTime, float totalTime)
 	// We can't do this in Material or MeshEntity because it can't be done to just any shader, just this one in particular
 	basicLightingShader->SetFloat3("cameraPosition", camera->GetTransform().GetPosition());
 	basicLightingShader->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
-	transparencyShader->SetFloat3("cameraPosition", camera->GetTransform().GetPosition());
-	transparencyShader->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
-	context->OMSetBlendState(NULL, NULL, 0xffffffff);
-	skyBox->Draw(camera, context); //after drawing objects
-	//ADD DRAW FOR FLOOR HERE
-	context->OMSetBlendState(transparencyBlendState, NULL, 0xffffffff); //all items in meshEntities are transparent
 
 	for (int i = 0; i < meshEntities.size(); ++i) {
 		std::shared_ptr<MeshEntity> currentEntity = meshEntities.at(i);
 		//should work fine without checking (just potentially unneccessary setting), does this help or hurt performance?
-		currentEntity->GetMaterial()->BindResources();			
-		if (currentEntity->GetMaterial()->GetPixelShader() == transparencyShader) {
-			transparencyShader->SetFloat3("position", meshEntities[i]->GetTransform()->GetPosition());
+		if (currentEntity->GetMaterial()->GetPixelShader() == basicLightingShader) {
+			currentEntity->GetMaterial()->BindResources();
+			currentEntity->GetMaterial()->GetPixelShader()->SetFloat("roughness", currentEntity->GetMaterial()->GetRoughness());
+			currentEntity->GetMaterial()->GetPixelShader()->SetFloat3("ambientColor", ambientColor);
+
 		}
-		currentEntity -> Draw(camera, context);
+		currentEntity->Draw(camera, context);
 	}
+	skyBox->Draw(camera, context); //after drawing objects
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
