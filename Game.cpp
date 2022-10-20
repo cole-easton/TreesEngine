@@ -52,6 +52,7 @@ Game::~Game()
 	delete cubeMesh;
 	delete tree1Mesh;
 	delete skyBox;
+	delete tree1Mesh;
 }
 
 // --------------------------------------------------------
@@ -93,11 +94,11 @@ void Game::TestLSystem() {
 	LSpecies* species1 = new LSpecies([this](std::string rule) {
 		this->replaceAll(rule, "X", "F[-FX][+FX]");
 		return rule;
-		}, std::string("X"), 30.f, 30.f, 0.4f, 0.8f, 1.f, 0.8f);
-	std::string rule = species1->Grow(10);
+		}, std::string("X"), DirectX::XM_PI/6, DirectX::XM_PI/6, 0.3f, 0.8f, 1.f, 0.8f);
+	std::string rule = species1->Grow(3);
 	printf(rule.c_str());
-	tree1Mesh = species1->Build("F", device, context);
-	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, transparentMaterial);
+	tree1Mesh = species1->Build(rule, device, context);
+	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, metalHatchMaterial);
 	tree1instance1->GetTransform()->SetPosition(0, 0, 0);
 	meshEntities.push_back(tree1instance1);
 	delete species1;

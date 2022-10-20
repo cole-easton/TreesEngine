@@ -25,7 +25,7 @@ std::string LSpecies::Grow(int iterations) {
 Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	DirectX::XMFLOAT4X4 initRotation;
-	DirectX::XMStoreFloat4x4(&initRotation, DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_PIDIV2, 0));
+	DirectX::XMStoreFloat4x4(&initRotation, DirectX::XMMatrixRotationRollPitchYaw(DirectX::XM_PIDIV2, 0, 0));
 	LState state(DirectX::XMFLOAT3(0, 0, 0), initRotation, initialThickness, initialLimbLength);
 	std::vector<LState>* savedStates = new std::vector<LState>();
 	const int numSides = 5;
@@ -35,39 +35,40 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			++fCount;
 		}
 	}
-	Vertex* vertices = new Vertex[40];
-	unsigned int* indices = new unsigned int[40];
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
 	unsigned int vertexIndex = 0;
-	unsigned int indexIndex = 0;
 	for (unsigned int i = 0; i < rule.length(); ++i) {
+		const DirectX::XMFLOAT3 forward = DirectX::XMFLOAT3(state.direction._13, state.direction._23, state.direction._33);
 		switch (rule[i])
 		{
 		case 'F':
-			DirectX::XMFLOAT3 left = DirectX::XMFLOAT3(state.direction._11, state.direction._12, state.direction._13);
-			DirectX::XMFLOAT3 forward = DirectX::XMFLOAT3(state.direction._31, state.direction._32, state.direction._33);
+			const DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(state.direction._11, state.direction._21, state.direction._31);
 			//construct ring of verts around current draw pos
 			for (int j = 0; j < numSides; j++) {
 				Vertex vert = {};
-				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&left),state.thickness/2), DirectX::XMMatrixRotationRollPitchYaw(0, 0, DirectX::XM_2PI * ((float)j) / numSides))));
-				vertices[vertexIndex++] = vert;
+				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right),state.thickness/2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
+				vertices.push_back(vert);
 			}
 			//move draw position forward by length
 			DirectX::XMStoreFloat3(&state.position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&forward), state.length)));
 			// construct ring of verts around new draw pos
 			for (unsigned int j = 0; j < numSides; j++) {
 				Vertex vert = {};
-				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&left), state.thickness / 2), DirectX::XMMatrixRotationRollPitchYaw(0, 0, DirectX::XM_2PI * ((float)j) / numSides))));
-				vertices[vertexIndex++] = vert;
+				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
+				vertices.push_back(vert);
 			}
-			for (unsigned int j = vertexIndex - 2 * numSides; j < vertexIndex - numSides; ++j) {
-				indices[indexIndex++] = j;
-				indices[indexIndex++] = j+numSides;
-				indices[indexIndex++] = (j+numSides+1==vertexIndex)?vertexIndex-numSides+1:j+numSides+1;
-
-				indices[indexIndex++] = j;
-				indices[indexIndex++] = (j + numSides + 1 == vertexIndex) ? vertexIndex - numSides + 1 : j + numSides + 1;
-				indices[indexIndex++] = (j+1==vertexIndex-numSides+1)?vertexIndex-2*numSides:j+1;
+			for (unsigned int j = vertexIndex; j < vertexIndex + numSides; ++j) {
+				indices.push_back(j+numSides);
+				indices.push_back((j==vertexIndex+numSides-1)?vertexIndex+numSides:j+numSides+1);
+				indices.push_back(j);
+				
+				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex + numSides : j + numSides + 1);
+				indices.push_back((j== vertexIndex + numSides - 1)?vertexIndex:j+1);
+				indices.push_back(j);
 			} 
+
+			vertexIndex += numSides * 2;
 			break;
 		case '+':
 			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(deltaInclination, 0, 0), DirectX::XMLoadFloat4x4(&state.direction)));
@@ -76,10 +77,10 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(-deltaInclination, 0, 0), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '>':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(0, 0, deltaInclination), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '<':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(0, 0, -deltaInclination), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), -deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '[':
 				savedStates->push_back(state);
@@ -97,10 +98,9 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			break;
 		}
 	}
-	return new Mesh(vertices, vertexIndex, indices, indexIndex, device, context);
-	delete[] vertices;
-	delete[] indices;
 	delete savedStates;
+	Mesh* mesh = new Mesh(&vertices[0], vertexIndex, &indices[0], indices.size(), device, context);
+	return mesh;
 }
 
 
