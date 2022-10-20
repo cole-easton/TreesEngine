@@ -40,6 +40,11 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 	unsigned int vertexIndex = 0;
 	for (unsigned int i = 0; i < rule.length(); ++i) {
 		const DirectX::XMFLOAT3 forward = DirectX::XMFLOAT3(state.direction._13, state.direction._23, state.direction._33);
+		DirectX::XMFLOAT3 oldForward;
+		if (savedStates->size() >= 1) {
+			LState prev = savedStates->back();
+			oldForward = DirectX::XMFLOAT3(prev.direction._13, prev.direction._23, prev.direction._33);
+		}
 		switch (rule[i])
 		{
 		case 'F':
@@ -59,28 +64,28 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 				vertices.push_back(vert);
 			}
 			for (unsigned int j = vertexIndex; j < vertexIndex + numSides; ++j) {
-				indices.push_back(j+numSides);
-				indices.push_back((j==vertexIndex+numSides-1)?vertexIndex+numSides:j+numSides+1);
 				indices.push_back(j);
-				
 				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex + numSides : j + numSides + 1);
-				indices.push_back((j== vertexIndex + numSides - 1)?vertexIndex:j+1);
+				indices.push_back(j + numSides);
+				
 				indices.push_back(j);
+				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex : j + 1);
+				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex + numSides : j + numSides + 1);
 			} 
 
 			vertexIndex += numSides * 2;
 			break;
 		case '+':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(deltaInclination, 0, 0), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(0, 0, deltaInclination), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '-':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(-deltaInclination, 0, 0), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(0, 0, -deltaInclination), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '>':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&oldForward), deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '<':
-			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), -deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
+			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&oldForward), -deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '[':
 				savedStates->push_back(state);

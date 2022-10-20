@@ -92,14 +92,14 @@ void Game::Init()
 
 void Game::TestLSystem() {
 	LSpecies* species1 = new LSpecies([this](std::string rule) {
-		this->replaceAll(rule, "X", "F[-FX][+FX]");
+		this->replaceAll(rule, "X", "F[-[#$FX]<[#$FX]<[#$FX]]");
 		return rule;
-		}, std::string("X"), DirectX::XM_PI/6, DirectX::XM_PI/6, 0.3f, 0.8f, 1.f, 0.8f);
+		}, std::string("X"), DirectX::XM_PI/6, 2*DirectX::XM_PI/3, 0.3f, 0.7f, 1.5f, 0.8f);
 	std::string rule = species1->Grow(3);
 	printf(rule.c_str());
 	tree1Mesh = species1->Build(rule, device, context);
 	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, metalHatchMaterial);
-	tree1instance1->GetTransform()->SetPosition(0, 0, 0);
+	tree1instance1->GetTransform()->SetPosition(0, -2, 0);
 	meshEntities.push_back(tree1instance1);
 	delete species1;
 }
@@ -267,18 +267,11 @@ void Game::ResizeOnePostProcessResource(
 void Game::Update(float deltaTime, float totalTime)
 {
 	for (int i = 0; i < meshEntities.size(); ++i) {
-		meshEntities.at(i)->GetTransform()->Turn(-0.5f * deltaTime, 0.5f * deltaTime, 0.5f * deltaTime);
+		meshEntities.at(i)->GetTransform()->Turn(0, 0.3f * deltaTime, 0);
 	}
 	camera->Update(deltaTime);
 
 	XMFLOAT3 camPos = camera->GetTransform().GetPosition();
-	std::sort(meshEntities.begin(), meshEntities.end(), [&](std::shared_ptr<MeshEntity> a, std::shared_ptr<MeshEntity> b) -> bool {
-		XMFLOAT3 aPos = a->GetTransform()->GetPosition();
-		XMFLOAT3 bPos = b->GetTransform()->GetPosition();
-		float aDist = XMVectorGetX(XMVector3Length(XMLoadFloat3(&aPos) - XMLoadFloat3(&camPos)));
-		float bDist = XMVectorGetX(XMVector3Length(XMLoadFloat3(&bPos) - XMLoadFloat3(&camPos)));
-		return aDist > bDist;
-	});
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
