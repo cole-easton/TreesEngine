@@ -52,7 +52,7 @@ private:
 
 	SkyBox* skyBox;
 
-	std::shared_ptr<MeshEntity> tree1instance1;
+	std::vector<std::shared_ptr<MeshEntity>> trees;
 	std::shared_ptr<MeshEntity> tree2instance1;
 	std::shared_ptr<MeshEntity> player;
 	std::shared_ptr<MeshEntity> ground;

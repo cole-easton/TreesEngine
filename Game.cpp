@@ -74,7 +74,7 @@ void Game::Init()
 	CreateBasicGeometry();
 	TestLSystem();
 	SetLights();
-	camTransform = new Transform(0, 2, -10, 0.35, 0, 0, 1, 1, 1);
+	camTransform = new Transform(0, 2, -10, 0.30, 0, 0, 1, 1, 1);
 	camera = std::make_shared<Camera>(camTransform, (float)this->width / this->height);
 	ambientColor = XMFLOAT3(0.15f, 0.15f, 0.25f);
 	
@@ -104,21 +104,23 @@ void Game::TestLSystem() {
 		return rule;
 		}, std::string("X"), DirectX::XM_PI/6, 2*DirectX::XM_PI/3, 0.3f, 0.7f, 1.f, 0.8f);
 	std::string rule = species1->Grow(4);
-	printf(rule.c_str());
 	tree1Mesh = species1->Build(rule, device, context);
-	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, bark);
-	tree1instance1->GetTransform()->SetPosition(-2, 0, 0);
-	meshEntities.push_back(tree1instance1);
-
 	LSpecies* species2 = new LSpecies([this](std::string rule) {
 		std::srand(time(NULL));
 		this->replaceAll(rule, "FX", "F[-FX]F[-<FX]F[-<<FX]");
 		return rule;
 		}, std::string("FX"), DirectX::XM_PI / 6, 2 * DirectX::XM_PI / 3, 0.15f, 0.7f, .5f, 0.8f);
-	tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
-	tree2instance1 = std::make_shared<MeshEntity>(tree2Mesh, bark);
-	tree2instance1->GetTransform()->SetPosition(2, 0, 0);
-	meshEntities.push_back(tree2instance1);
+		tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
+
+	srand((unsigned)time(NULL));
+	for (int i = 0; i < 100; i++) {
+		trees.push_back(std::make_shared<MeshEntity>(rand()%2?tree1Mesh:tree2Mesh, bark));
+		trees.back()->GetTransform()->SetPosition((rand() % 2000 - 1000) / 10.f,0, (rand() % 2000 - 1000)/10.f);
+		trees.back()->GetTransform()->SetRotation(0, rand() / (float)RAND_MAX * XM_2PI, 0);
+		float scalar = 2*pow(1.5f, (rand() / (float)RAND_MAX) * 2 - 1);
+		trees.back() -> GetTransform()->SetScale(scalar, scalar, scalar);
+
+	}
 
 	delete species1;
 	delete species2;
@@ -345,10 +347,23 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyDown(VK_RIGHT)) {
 		player->GetTransform()->Turn(0, deltaTime, 0);
 	}
-	float alpha = 0.01f;
+	const float TREE_RAD = 1.f;
+	for (int i = 0; i < trees.size(); ++i) {
+		float dist;
+		XMStoreFloat(&dist, XMVector3Length(XMVectorAdd(XMLoadFloat3(&trees[i]->GetTransform()->GetPosition()), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetPosition()), -1.f))));
+		if (dist < TREE_RAD) {
+			XMFLOAT3 newPos;
+			std::cout << "hit" << std::endl;
+			XMStoreFloat3(&newPos, XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorScale(XMVector3Normalize(XMVectorAdd(XMVectorScale(XMLoadFloat3(&trees[i]->GetTransform()->GetPosition()), -1),XMLoadFloat3(&player->GetTransform()->GetPosition()))), TREE_RAD/XM_PI)));
+			newPos.y = 0.5f;
+			player->GetTransform()->SetPosition(newPos);
+		}
+		
+	}
+	float alpha = 0.005f;
 	float beta = 0.01f;
 	XMFLOAT3 camPos;
-	XMStoreFloat3(&camPos, XMVectorAdd(XMVectorScale(XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorAdd(XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetForward()), -10), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetUp()),4))), alpha), XMVectorScale(XMLoadFloat3(&camera->GetTransform()->GetPosition()), 1 - alpha)));
+	XMStoreFloat3(&camPos, XMVectorAdd(XMVectorScale(XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorAdd(XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetForward()), -6), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetUp()),3))), alpha), XMVectorScale(XMLoadFloat3(&camera->GetTransform()->GetPosition()), 1 - alpha)));
 	float yaw = player->GetTransform()->GetRotation().y * beta + camera->GetTransform()->GetRotation().y * (1 - beta);
 	camera->GetTransform()->SetPosition(camPos);
 	XMFLOAT3 camRot = camera->GetTransform()->GetRotation();
@@ -385,6 +400,17 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	for (int i = 0; i < meshEntities.size(); ++i) {
 		std::shared_ptr<MeshEntity> currentEntity = meshEntities.at(i);
+		//should work fine without checking (just potentially unneccessary setting), does this help or hurt performance?
+		if (currentEntity->GetMaterial()->GetPixelShader() == basicLightingShader) {
+			currentEntity->GetMaterial()->BindResources();
+			currentEntity->GetMaterial()->GetPixelShader()->SetFloat("roughness", currentEntity->GetMaterial()->GetRoughness());
+			currentEntity->GetMaterial()->GetPixelShader()->SetFloat3("ambientColor", ambientColor);
+
+		}
+		currentEntity->Draw(camera, context);
+	}
+	for (int i = 0; i < trees.size(); ++i) {
+		std::shared_ptr<MeshEntity> currentEntity = trees.at(i);
 		//should work fine without checking (just potentially unneccessary setting), does this help or hurt performance?
 		if (currentEntity->GetMaterial()->GetPixelShader() == basicLightingShader) {
 			currentEntity->GetMaterial()->BindResources();
