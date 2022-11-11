@@ -55,10 +55,16 @@ private:
 
 	std::vector<std::shared_ptr<MeshEntity>> meshEntities;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metalHatchTex;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metalHatchRoughness;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metalHatchNormal;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metalHatchMetalness;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkAlbedo;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkRoughness;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkNormals;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkMetalness;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumAlbedo;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumRoughness;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumNormals;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumMetalness;
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skyBoxTex;
 
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> refractionRTV;
@@ -68,8 +74,8 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 
-	Material* metalHatchMaterial;
-	Material* transparentMaterial;
+	Material* bark;
+	Material* aluminum;
 
 	ID3D11BlendState* transparencyBlendState;
 

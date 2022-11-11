@@ -49,8 +49,8 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	delete metalHatchMaterial;
-	delete transparentMaterial;
+	delete bark;
+	delete aluminum;
 	delete cubeMesh;
 	delete tree1Mesh;
 	delete skyBox;
@@ -102,7 +102,7 @@ void Game::TestLSystem() {
 	std::string rule = species1->Grow(4);
 	printf(rule.c_str());
 	tree1Mesh = species1->Build(rule, device, context);
-	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, metalHatchMaterial);
+	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, bark);
 	tree1instance1->GetTransform()->SetPosition(-2, -2, 0);
 	meshEntities.push_back(tree1instance1);
 
@@ -112,7 +112,7 @@ void Game::TestLSystem() {
 		return rule;
 		}, std::string("FX"), DirectX::XM_PI / 6, 2 * DirectX::XM_PI / 3, 0.15f, 0.7f, .5f, 0.8f);
 	tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
-	tree2instance1 = std::make_shared<MeshEntity>(tree2Mesh, metalHatchMaterial);
+	tree2instance1 = std::make_shared<MeshEntity>(tree2Mesh, bark);
 	tree2instance1->GetTransform()->SetPosition(2, -2, 0);
 	meshEntities.push_back(tree2instance1);
 
@@ -184,10 +184,16 @@ void Game::SetLights() {
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/metalhatch_albedo.tif").c_str(), 0, metalHatchTex.GetAddressOf());
-	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/metalhatch_roughness.tif").c_str(), 0, metalHatchRoughness.GetAddressOf());
-	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/metalhatch_normal.tif").c_str(), 0, metalHatchNormal.GetAddressOf());
-	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/metalhatch_metalness.tif").c_str(), 0, metalHatchMetalness.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkAlbedo.tif").c_str(), 0, barkAlbedo.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkRoughness.tif").c_str(), 0, barkRoughness.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkNormals.tif").c_str(), 0, barkNormals.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkMetalness.tif").c_str(), 0, barkMetalness.GetAddressOf());
+
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumAlbedo.tif").c_str(), 0, alumAlbedo.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumRoughness.tif").c_str(), 0, alumRoughness.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumNormals.tif").c_str(), 0, alumNormals.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumMetalness.tif").c_str(), 0, alumMetalness.GetAddressOf());
+
 	CreateDDSTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/SunnyCubeMap.dds").c_str(), 0, skyBoxTex.GetAddressOf());
 
 	D3D11_SAMPLER_DESC desc = {};
@@ -199,20 +205,26 @@ void Game::CreateBasicGeometry()
 	desc.MaxLOD = D3D11_FLOAT32_MAX;
 	device->CreateSamplerState(&desc, samplerState.GetAddressOf());
 
-	metalHatchMaterial = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
-	transparentMaterial = new Material(XMFLOAT4(1, 0, 0, 0.1f), vertexShader, transparencyShader, 0.1f);
+	bark = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
+	aluminum = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 
-	metalHatchMaterial->AddTextureSRV("Albedo", metalHatchTex);
-	metalHatchMaterial->AddTextureSRV("RoughnessMap", metalHatchRoughness);
-	metalHatchMaterial->AddTextureSRV("NormalMap", metalHatchNormal);
-	metalHatchMaterial->AddTextureSRV("MetalnessMap", metalHatchMetalness);
-	metalHatchMaterial->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
+	bark->AddTextureSRV("Albedo", barkAlbedo);
+	bark->AddTextureSRV("RoughnessMap", barkRoughness);
+	bark->AddTextureSRV("NormalMap", barkNormals);
+	bark->AddTextureSRV("MetalnessMap", barkMetalness);
+	bark->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
 	
+	aluminum->AddTextureSRV("Albedo", alumAlbedo);
+	aluminum->AddTextureSRV("RoughnessMap", alumRoughness);
+	aluminum->AddTextureSRV("NormalMap", alumNormals);
+	aluminum->AddTextureSRV("MetalnessMap", alumMetalness);
+	aluminum->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
+
 	cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
 
 	skyBox = new SkyBox(cubeMesh, skyBoxTex, skyBoxVertexShader, skyBoxPixelShader, samplerState, device);
 
-	player = std::make_shared<MeshEntity>(cubeMesh, metalHatchMaterial);
+	player = std::make_shared<MeshEntity>(cubeMesh, aluminum);
 	meshEntities.push_back(player);
 }
 
