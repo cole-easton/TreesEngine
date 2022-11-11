@@ -42,7 +42,10 @@ private:
 	std::shared_ptr<SimpleVertexShader> skyBoxVertexShader;
 
 	std::shared_ptr<Camera> camera;
+	Transform* camTransform;
 
+	Mesh* planeMesh;
+	Mesh* sphereMesh;
 	Mesh* cubeMesh;
 	Mesh* tree1Mesh;
 	Mesh* tree2Mesh;
@@ -52,6 +55,7 @@ private:
 	std::shared_ptr<MeshEntity> tree1instance1;
 	std::shared_ptr<MeshEntity> tree2instance1;
 	std::shared_ptr<MeshEntity> player;
+	std::shared_ptr<MeshEntity> ground;
 
 	std::vector<std::shared_ptr<MeshEntity>> meshEntities;
 
@@ -59,6 +63,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkRoughness;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkNormals;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkMetalness;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassAlbedo;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassRoughness;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassNormals;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumAlbedo;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> alumRoughness;
@@ -76,6 +84,7 @@ private:
 
 	Material* bark;
 	Material* aluminum;
+	Material* grass;
 
 	ID3D11BlendState* transparencyBlendState;
 

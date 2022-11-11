@@ -42,12 +42,13 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 		switch (rule[i])
 		{
 		case 'F':
+			DirectX::XMStoreFloat3(&state.position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&forward), -0.025f)));
 			const DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(state.direction._11, state.direction._21, state.direction._31);
 			//construct ring of verts around current draw pos
 			for (int j = 0; j < numSides; j++) {
 				Vertex vert = {};
-				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right),state.thickness/2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
-				DirectX::XMStoreFloat3(&vert.Normal, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&vert.Position)));
+				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right),state.thickness/2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides))));
+				DirectX::XMStoreFloat3(&vert.Normal, DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides)));
 				vert.UV = DirectX::XMFLOAT2(j/(float)(numSides-1), 0);
 				vertices.push_back(vert);
 			}
@@ -56,7 +57,8 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			// construct ring of verts around new draw pos
 			for (unsigned int j = 0; j < numSides; j++) {
 				Vertex vert = {};
-				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
+				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides))));
+				DirectX::XMStoreFloat3(&vert.Normal, DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides)));
 				vert.UV = DirectX::XMFLOAT2(j / (float)(numSides-1), 1);
 				vertices.push_back(vert);
 			}

@@ -50,12 +50,15 @@ Game::Game(HINSTANCE hInstance)
 Game::~Game()
 {
 	delete bark;
+	delete grass;
 	delete aluminum;
 	delete cubeMesh;
-	delete tree1Mesh;
+	delete sphereMesh;
+	delete planeMesh;
 	delete skyBox;
 	delete tree1Mesh;
 	delete tree2Mesh;
+	delete camTransform;
 }
 
 // --------------------------------------------------------
@@ -71,7 +74,8 @@ void Game::Init()
 	CreateBasicGeometry();
 	TestLSystem();
 	SetLights();
-	camera = std::make_shared<Camera>(Transform(0, 0, -10, 0, 0, 0, 1, 1, 1), (float)this->width / this->height);
+	camTransform = new Transform(0, 2, -10, 0.35, 0, 0, 1, 1, 1);
+	camera = std::make_shared<Camera>(camTransform, (float)this->width / this->height);
 	ambientColor = XMFLOAT3(0.15f, 0.15f, 0.25f);
 	
 	// Tell the input assembler stage of the pipeline what kind of
@@ -103,7 +107,7 @@ void Game::TestLSystem() {
 	printf(rule.c_str());
 	tree1Mesh = species1->Build(rule, device, context);
 	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, bark);
-	tree1instance1->GetTransform()->SetPosition(-2, -2, 0);
+	tree1instance1->GetTransform()->SetPosition(-2, 0, 0);
 	meshEntities.push_back(tree1instance1);
 
 	LSpecies* species2 = new LSpecies([this](std::string rule) {
@@ -113,7 +117,7 @@ void Game::TestLSystem() {
 		}, std::string("FX"), DirectX::XM_PI / 6, 2 * DirectX::XM_PI / 3, 0.15f, 0.7f, .5f, 0.8f);
 	tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
 	tree2instance1 = std::make_shared<MeshEntity>(tree2Mesh, bark);
-	tree2instance1->GetTransform()->SetPosition(2, -2, 0);
+	tree2instance1->GetTransform()->SetPosition(2, 0, 0);
 	meshEntities.push_back(tree2instance1);
 
 	delete species1;
@@ -189,6 +193,10 @@ void Game::CreateBasicGeometry()
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkNormals.tif").c_str(), 0, barkNormals.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkMetalness.tif").c_str(), 0, barkMetalness.GetAddressOf());
 
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/grassAlbedo.tif").c_str(), 0, grassAlbedo.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/grassRoughness.tif").c_str(), 0, grassRoughness.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/grassNormals.tif").c_str(), 0, grassNormals.GetAddressOf());
+
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumAlbedo.tif").c_str(), 0, alumAlbedo.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumRoughness.tif").c_str(), 0, alumRoughness.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/alumNormals.tif").c_str(), 0, alumNormals.GetAddressOf());
@@ -206,6 +214,7 @@ void Game::CreateBasicGeometry()
 	device->CreateSamplerState(&desc, samplerState.GetAddressOf());
 
 	bark = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
+	grass = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 	aluminum = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 
 	bark->AddTextureSRV("Albedo", barkAlbedo);
@@ -213,6 +222,12 @@ void Game::CreateBasicGeometry()
 	bark->AddTextureSRV("NormalMap", barkNormals);
 	bark->AddTextureSRV("MetalnessMap", barkMetalness);
 	bark->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
+
+	grass->AddTextureSRV("Albedo",grassAlbedo);
+	grass->AddTextureSRV("RoughnessMap", grassRoughness);
+	grass->AddTextureSRV("NormalMap", grassNormals);
+	grass->AddTextureSRV("MetalnessMap", barkMetalness);
+	grass->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
 	
 	aluminum->AddTextureSRV("Albedo", alumAlbedo);
 	aluminum->AddTextureSRV("RoughnessMap", alumRoughness);
@@ -221,11 +236,20 @@ void Game::CreateBasicGeometry()
 	aluminum->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
 
 	cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
+	sphereMesh = new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context);
+	planeMesh = new Mesh(GetFullPathTo("../../Assets/Models/quad.obj").c_str(), device, context);
 
 	skyBox = new SkyBox(cubeMesh, skyBoxTex, skyBoxVertexShader, skyBoxPixelShader, samplerState, device);
 
-	player = std::make_shared<MeshEntity>(cubeMesh, aluminum);
+	player = std::make_shared<MeshEntity>(sphereMesh, aluminum);
+	player->GetTransform()->SetScale(0.5f, 0.5f, 0.5f);
+	player->GetTransform()->SetPosition(0, 0.5f, 0);
 	meshEntities.push_back(player);
+
+	ground = std::make_shared<MeshEntity>(planeMesh, grass);
+	ground->GetTransform()->SetPosition(0, 0, 0);
+	ground->GetTransform()->SetScale(100, 100, 100);
+	meshEntities.push_back(ground);
 }
 
 
@@ -298,11 +322,39 @@ void Game::ResizeOnePostProcessResource(
 void Game::Update(float deltaTime, float totalTime)
 {
 	for (int i = 0; i < meshEntities.size(); ++i) {
-		meshEntities.at(i)->GetTransform()->Turn(0, 0.3f * deltaTime, 0);
+		//meshEntities.at(i)->GetTransform()->Turn(0, 0.3f * deltaTime, 0);
 	}
+	float movementSpeed = 4.f;
+	Input& input = Input::GetInstance();
+	//I am intentionally not using else-ifs -- I want forward and backward to cancel and to be able to move diagonally
+	if (input.KeyDown('W') || input.KeyDown(VK_UP)) {
+		player->GetTransform()->Move(0, 0, movementSpeed * deltaTime);
+	}
+	if (input.KeyDown('S') || input.KeyDown(VK_DOWN)) {
+		player->GetTransform()->Move(0, 0, -movementSpeed * deltaTime);
+	}
+	if (input.KeyDown('A')) {
+		player->GetTransform()->Move(-movementSpeed * deltaTime, 0, 0);
+	}
+	if (input.KeyDown('D')) {
+		player->GetTransform()->Move(movementSpeed * deltaTime, 0, 0);
+	}
+	if (input.KeyDown(VK_LEFT)) {
+		player->GetTransform()->Turn(0, -deltaTime, 0);
+	}
+	if (input.KeyDown(VK_RIGHT)) {
+		player->GetTransform()->Turn(0, deltaTime, 0);
+	}
+	float alpha = 0.01f;
+	float beta = 0.01f;
+	XMFLOAT3 camPos;
+	XMStoreFloat3(&camPos, XMVectorAdd(XMVectorScale(XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorAdd(XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetForward()), -10), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetUp()),4))), alpha), XMVectorScale(XMLoadFloat3(&camera->GetTransform()->GetPosition()), 1 - alpha)));
+	float yaw = player->GetTransform()->GetRotation().y * beta + camera->GetTransform()->GetRotation().y * (1 - beta);
+	camera->GetTransform()->SetPosition(camPos);
+	XMFLOAT3 camRot = camera->GetTransform()->GetRotation();
+	camRot.y = yaw;
+	camera->GetTransform()->SetRotation(camRot);
 	camera->Update(deltaTime);
-
-	XMFLOAT3 camPos = camera->GetTransform().GetPosition();
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -328,7 +380,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		0);
 
 	// We can't do this in Material or MeshEntity because it can't be done to just any shader, just this one in particular
-	basicLightingShader->SetFloat3("cameraPosition", camera->GetTransform().GetPosition());
+	basicLightingShader->SetFloat3("cameraPosition", camera->GetTransform()->GetPosition());
 	basicLightingShader->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
 
 	for (int i = 0; i < meshEntities.size(); ++i) {

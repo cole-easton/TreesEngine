@@ -25,9 +25,20 @@ void Transform::SetPosition(float x, float y, float z)
 	dirty = true;
 }
 
+void Transform::SetPosition(XMFLOAT3 pos) {
+	position = pos;
+	dirty = true;
+}
+
 void Transform::SetRotation(float pitch, float yaw, float roll)
 {
 	rotation = XMFLOAT3(pitch, yaw, roll);
+	dirty = true;
+}
+
+void Transform::SetRotation(DirectX::XMFLOAT3 rotation)
+{
+	this->rotation = rotation;
 	dirty = true;
 }
 
