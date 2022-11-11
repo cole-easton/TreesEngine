@@ -45,10 +45,13 @@ private:
 
 	Mesh* cubeMesh;
 	Mesh* tree1Mesh;
+	Mesh* tree2Mesh;
 
 	SkyBox* skyBox;
 
 	std::shared_ptr<MeshEntity> tree1instance1;
+	std::shared_ptr<MeshEntity> tree2instance1;
+	std::shared_ptr<MeshEntity> player;
 
 	std::vector<std::shared_ptr<MeshEntity>> meshEntities;
 

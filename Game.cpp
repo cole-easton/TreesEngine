@@ -8,6 +8,8 @@
 #include "WICTextureLoader.h"
 #include "LSpecies.h"
 #include <iostream>
+#include <cstdlib>
+#include <time.h>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -53,6 +55,7 @@ Game::~Game()
 	delete tree1Mesh;
 	delete skyBox;
 	delete tree1Mesh;
+	delete tree2Mesh;
 }
 
 // --------------------------------------------------------
@@ -92,16 +95,29 @@ void Game::Init()
 
 void Game::TestLSystem() {
 	LSpecies* species1 = new LSpecies([this](std::string rule) {
-		this->replaceAll(rule, "X", "F[-[#$FX]<[#$FX]<[#$FX]]");
+		std::srand(time(NULL));
+		this->replaceAll(rule, "X", "F[-#$[FX]<[FX]<[FX]]");
 		return rule;
-		}, std::string("X"), DirectX::XM_PI/6, 2*DirectX::XM_PI/3, 0.3f, 0.7f, 1.5f, 0.8f);
-	std::string rule = species1->Grow(3);
+		}, std::string("X"), DirectX::XM_PI/6, 2*DirectX::XM_PI/3, 0.3f, 0.7f, 1.f, 0.8f);
+	std::string rule = species1->Grow(4);
 	printf(rule.c_str());
 	tree1Mesh = species1->Build(rule, device, context);
 	tree1instance1 = std::make_shared<MeshEntity>(tree1Mesh, metalHatchMaterial);
-	tree1instance1->GetTransform()->SetPosition(0, -2, 0);
+	tree1instance1->GetTransform()->SetPosition(-2, -2, 0);
 	meshEntities.push_back(tree1instance1);
+
+	LSpecies* species2 = new LSpecies([this](std::string rule) {
+		std::srand(time(NULL));
+		this->replaceAll(rule, "FX", "F[-FX]F[-<FX]F[-<<FX]");
+		return rule;
+		}, std::string("FX"), DirectX::XM_PI / 6, 2 * DirectX::XM_PI / 3, 0.15f, 0.7f, .5f, 0.8f);
+	tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
+	tree2instance1 = std::make_shared<MeshEntity>(tree2Mesh, metalHatchMaterial);
+	tree2instance1->GetTransform()->SetPosition(2, -2, 0);
+	meshEntities.push_back(tree2instance1);
+
 	delete species1;
+	delete species2;
 }
 
 
@@ -195,6 +211,9 @@ void Game::CreateBasicGeometry()
 	cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
 
 	skyBox = new SkyBox(cubeMesh, skyBoxTex, skyBoxVertexShader, skyBoxPixelShader, samplerState, device);
+
+	player = std::make_shared<MeshEntity>(cubeMesh, metalHatchMaterial);
+	meshEntities.push_back(player);
 }
 
 

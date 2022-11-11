@@ -29,12 +29,6 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 	LState state(DirectX::XMFLOAT3(0, 0, 0), initRotation, initialThickness, initialLimbLength);
 	std::vector<LState>* savedStates = new std::vector<LState>();
 	const int numSides = 5;
-	unsigned int fCount = 0;
-	for (int i = 0; i < rule.length(); ++i) {
-		if (rule[i] == 'F') {
-			++fCount;
-		}
-	}
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	unsigned int vertexIndex = 0;
@@ -53,6 +47,8 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			for (int j = 0; j < numSides; j++) {
 				Vertex vert = {};
 				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right),state.thickness/2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
+				DirectX::XMStoreFloat3(&vert.Normal, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&vert.Position)));
+				vert.UV = DirectX::XMFLOAT2(j/(float)(numSides-1), 0);
 				vertices.push_back(vert);
 			}
 			//move draw position forward by length
@@ -61,12 +57,15 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			for (unsigned int j = 0; j < numSides; j++) {
 				Vertex vert = {};
 				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationRollPitchYaw(0, DirectX::XM_2PI * ((float)j) / numSides, 0))));
+				vert.UV = DirectX::XMFLOAT2(j / (float)(numSides-1), 1);
 				vertices.push_back(vert);
 			}
 			for (unsigned int j = vertexIndex; j < vertexIndex + numSides; ++j) {
 				indices.push_back(j);
 				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex + numSides : j + numSides + 1);
 				indices.push_back(j + numSides);
+				//DirectX::XMVECTOR edge1 = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&(vertices[indices.back()].Position)), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&(vertices[indices[indices.size()-2]].Position)), -1));
+				//DirectX::XMVECTOR edge2 = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&(vertices[indices[indices.size()-3]].Position)), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&(vertices[indices[indices.size() - 2]].Position)), -1));
 				
 				indices.push_back(j);
 				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex : j + 1);
@@ -88,8 +87,8 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&oldForward), -deltaAzimuth), DirectX::XMLoadFloat4x4(&state.direction)));
 			break;
 		case '[':
-				savedStates->push_back(state);
-				break;
+			savedStates->push_back(state);
+			break;
 		case ']':
 			state = savedStates->back();
 			savedStates->pop_back();
@@ -99,6 +98,7 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			break;
 		case '$':
 			state.length *= limbLengthDecay;
+			break;
 		default:
 			break;
 		}
