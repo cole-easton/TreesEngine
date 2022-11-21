@@ -34,6 +34,7 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 	unsigned int vertexIndex = 0;
 	for (unsigned int i = 0; i < rule.length(); ++i) {
 		const DirectX::XMFLOAT3 forward = DirectX::XMFLOAT3(state.direction._13, state.direction._23, state.direction._33);
+		const DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(state.direction._11, state.direction._21, state.direction._31);
 		DirectX::XMFLOAT3 oldForward;
 		if (savedStates->size() >= 1) {
 			LState prev = savedStates->back();
@@ -43,7 +44,6 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 		{
 		case 'F':
 			DirectX::XMStoreFloat3(&state.position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&forward), -0.025f)));
-			const DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(state.direction._11, state.direction._21, state.direction._31);
 			//construct ring of verts around current draw pos
 			for (int j = 0; j < numSides; j++) {
 				Vertex vert = {};
@@ -66,8 +66,6 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 				indices.push_back(j);
 				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex + numSides : j + numSides + 1);
 				indices.push_back(j + numSides);
-				//DirectX::XMVECTOR edge1 = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&(vertices[indices.back()].Position)), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&(vertices[indices[indices.size()-2]].Position)), -1));
-				//DirectX::XMVECTOR edge2 = DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&(vertices[indices[indices.size()-3]].Position)), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&(vertices[indices[indices.size() - 2]].Position)), -1));
 				
 				indices.push_back(j);
 				indices.push_back((j == vertexIndex + numSides - 1) ? vertexIndex : j + 1);
@@ -75,6 +73,30 @@ Mesh* LSpecies::Build(const std::string& rule, Microsoft::WRL::ComPtr<ID3D11Devi
 			} 
 
 			vertexIndex += numSides * 2;
+			break;
+		case 'X':
+			DirectX::XMStoreFloat3(&state.position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&forward), -0.025f)));			//construct ring of verts around current draw pos
+			for (int j = 0; j < numSides; j++) {
+				Vertex vert = {};
+				DirectX::XMStoreFloat3(&vert.Position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides))));
+				DirectX::XMStoreFloat3(&vert.Normal, DirectX::XMVector3Transform(DirectX::XMVectorScale(DirectX::XMLoadFloat3(&right), state.thickness / 2), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&forward), DirectX::XM_2PI * ((float)j) / numSides)));
+				vert.UV = DirectX::XMFLOAT2(j / (float)(numSides - 1), 0);
+				vertices.push_back(vert);
+			}
+			DirectX::XMStoreFloat3(&state.position, DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&state.position), DirectX::XMVectorScale(DirectX::XMLoadFloat3(&forward), state.length)));
+			{
+				Vertex tipVertex = {};
+				tipVertex.Position = state.position;
+				DirectX::XMStoreFloat3(&tipVertex.Normal, DirectX::XMLoadFloat3(&forward));
+				tipVertex.UV = DirectX::XMFLOAT2(0.5f, 1);
+				vertices.push_back(tipVertex);
+				for (unsigned int j = vertexIndex; j < vertexIndex + numSides; ++j) {
+					indices.push_back(j);
+					indices.push_back(j == vertexIndex + numSides - 1 ? vertexIndex : j + 1);
+					indices.push_back(vertexIndex + numSides);
+				}
+			}
+			vertexIndex += numSides + 1;
 			break;
 		case '+':
 			DirectX::XMStoreFloat4x4(&state.direction, DirectX::XMMatrixMultiply(DirectX::XMMatrixRotationRollPitchYaw(0, 0, deltaInclination), DirectX::XMLoadFloat4x4(&state.direction)));

@@ -99,14 +99,12 @@ void Game::Init()
 
 void Game::TestLSystem() {
 	LSpecies* species1 = new LSpecies([this](std::string rule) {
-		std::srand(time(NULL));
 		this->replaceAll(rule, "X", "F[-#$[FX]<[FX]<[FX]]");
 		return rule;
 		}, std::string("X"), DirectX::XM_PI/6, 2*DirectX::XM_PI/3, 0.3f, 0.7f, 1.f, 0.8f);
 	std::string rule = species1->Grow(4);
 	tree1Mesh = species1->Build(rule, device, context);
 	LSpecies* species2 = new LSpecies([this](std::string rule) {
-		std::srand(time(NULL));
 		this->replaceAll(rule, "FX", "F[-FX]F[-<FX]F[-<<FX]");
 		return rule;
 		}, std::string("FX"), DirectX::XM_PI / 6, 2 * DirectX::XM_PI / 3, 0.15f, 0.7f, .5f, 0.8f);
@@ -360,8 +358,8 @@ void Game::Update(float deltaTime, float totalTime)
 		}
 		
 	}
-	float alpha = 0.005f;
-	float beta = 0.01f;
+	float alpha = 0.025f;
+	float beta = 0.05f;
 	XMFLOAT3 camPos;
 	XMStoreFloat3(&camPos, XMVectorAdd(XMVectorScale(XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorAdd(XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetForward()), -6), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetUp()),3))), alpha), XMVectorScale(XMLoadFloat3(&camera->GetTransform()->GetPosition()), 1 - alpha)));
 	float yaw = player->GetTransform()->GetRotation().y * beta + camera->GetTransform()->GetRotation().y * (1 - beta);
