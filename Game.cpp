@@ -111,13 +111,17 @@ void Game::TestLSystem() {
 		tree2Mesh = species2->Build(species2->Grow(4).c_str(), device, context);
 
 	srand((unsigned)time(NULL));
-	for (int i = 0; i < 100; i++) {
-		trees.push_back(std::make_shared<MeshEntity>(rand()%2?tree1Mesh:tree2Mesh, bark));
-		trees.back()->GetTransform()->SetPosition((rand() % 2000 - 1000) / 10.f,0, (rand() % 2000 - 1000)/10.f);
-		trees.back()->GetTransform()->SetRotation(0, rand() / (float)RAND_MAX * XM_2PI, 0);
-		float scalar = 2*pow(1.5f, (rand() / (float)RAND_MAX) * 2 - 1);
-		trees.back() -> GetTransform()->SetScale(scalar, scalar, scalar);
+	for (int i = 0; i < 10; ++i) {
+		for (int j = 0; j < 10; ++j) {
+			float random = rand() / (float)RAND_MAX;
 
+			bool tree1 = random < (1.0f/((i-1)*(i-1)+(j-1)*(j-1)))/(1.0f / ((i - 1) * (i - 1) + (j - 1) * (j - 1)) + 1.0f/((i-9) * (i-9) + (j-9) * (j-9)));
+			trees.push_back(std::make_shared<MeshEntity>(tree1 ? tree1Mesh : tree2Mesh, tree1?bark:birch));
+			trees.back()->GetTransform()->SetPosition((i-5.5 + (rand() / (float)RAND_MAX))*10, 0, (j-5.5+(rand() / (float)RAND_MAX))*10);
+			trees.back()->GetTransform()->SetRotation(0, rand() / (float)RAND_MAX * XM_2PI, 0);
+			float scalar = 2 * pow(1.5f, (rand() / (float)RAND_MAX) * 2 - 1);
+			trees.back()->GetTransform()->SetScale(scalar, scalar, scalar);
+		}
 	}
 
 	delete species1;
@@ -146,40 +150,40 @@ void Game::LoadShaders()
 void Game::SetLights() {
 	Light directionalLight1 = {};
 	directionalLight1.type = LIGHT_TYPE_DIRECTIONAL;
-	directionalLight1.color = XMFLOAT3(1, 1, 1);
-	directionalLight1.direction = XMFLOAT3(1, 0, 0);
+	directionalLight1.color = XMFLOAT3(0.8f, 1, 0.7f);
+	directionalLight1.direction = XMFLOAT3(0, 1, 0);
 	directionalLight1.intensity = 0.6f;
 
 	Light directionalLight2 = {};
 	directionalLight2.type = LIGHT_TYPE_DIRECTIONAL;
-	directionalLight2.color = XMFLOAT3(1, 1, 1);
-	directionalLight2.direction = XMFLOAT3(-1, -1, 0);
+	directionalLight2.color = XMFLOAT3(1, 1, 0.9f);
+	directionalLight2.direction = XMFLOAT3(-1, -1, 1);
 	directionalLight2.intensity = 0.9f;
 
 	Light directionalLight3 = {};
 	directionalLight3.type = LIGHT_TYPE_DIRECTIONAL;
-	directionalLight3.color = XMFLOAT3(1, 1, 1);
-	directionalLight3.direction = XMFLOAT3(0, 0, 1);
+	directionalLight3.color = XMFLOAT3(0.95f, 0.95f, 1);
+	directionalLight3.direction = XMFLOAT3(1, -1, 1);
 	directionalLight3.intensity = 1.3f;
 
-	Light pointLight1 = {};
-	pointLight1.type = LIGHT_TYPE_POINT;
-	pointLight1.color = XMFLOAT3(1, 1, 1);
-	pointLight1.position = XMFLOAT3(-4, 1.5, 0);
-	pointLight1.intensity = 1;
-	pointLight1.range = 3;
+	Light directionalLight4 = {};
+	directionalLight2.type = LIGHT_TYPE_DIRECTIONAL;
+	directionalLight2.color = XMFLOAT3(1, 1, 1);
+	directionalLight2.direction = XMFLOAT3(0, -1, -1);
+	directionalLight2.intensity = 1.f;
+
 
 	Light pointLight2 = {};
 	pointLight2.type = LIGHT_TYPE_POINT;
 	pointLight2.color = XMFLOAT3(1, 1, 1);
 	pointLight2.position = XMFLOAT3(6, -2, -2);
 	pointLight2.intensity = 0.8f;
-	pointLight2.range = 3;
+	pointLight2.range = 40;
 
 	lights.push_back(directionalLight1);
 	lights.push_back(directionalLight2);
 	lights.push_back(directionalLight3);
-	lights.push_back(pointLight1);
+	lights.push_back(directionalLight4);
 	lights.push_back(pointLight2);
 }
 
@@ -192,6 +196,10 @@ void Game::CreateBasicGeometry()
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkRoughness.tif").c_str(), 0, barkRoughness.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkNormals.tif").c_str(), 0, barkNormals.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/barkMetalness.tif").c_str(), 0, barkMetalness.GetAddressOf());
+
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/bark2_albedo.jpg").c_str(), 0, birchAlbedo.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/bark2_roughness.jpg").c_str(), 0, birchRoughness.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/bark2_normals.png").c_str(), 0, birchNormals.GetAddressOf());
 
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/grassAlbedo.tif").c_str(), 0, grassAlbedo.GetAddressOf());
 	CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/grassRoughness.tif").c_str(), 0, grassRoughness.GetAddressOf());
@@ -214,6 +222,7 @@ void Game::CreateBasicGeometry()
 	device->CreateSamplerState(&desc, samplerState.GetAddressOf());
 
 	bark = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
+	birch = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 	grass = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 	aluminum = new Material(XMFLOAT4(1, 1, 1, 1), vertexShader, basicLightingShader);
 
@@ -222,6 +231,12 @@ void Game::CreateBasicGeometry()
 	bark->AddTextureSRV("NormalMap", barkNormals);
 	bark->AddTextureSRV("MetalnessMap", barkMetalness);
 	bark->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
+
+	birch->AddTextureSRV("Albedo", birchAlbedo);
+	birch->AddTextureSRV("RoughnessMap", birchRoughness);
+	birch->AddTextureSRV("NormalMap", birchNormals);
+	birch->AddTextureSRV("MetalnessMap", barkMetalness);
+	birch->AddSampler("Sampler", samplerState); //can't call ut SamplerState because thats an HLSL keyword
 
 	grass->AddTextureSRV("Albedo",grassAlbedo);
 	grass->AddTextureSRV("RoughnessMap", grassRoughness);
@@ -248,7 +263,7 @@ void Game::CreateBasicGeometry()
 
 	ground = std::make_shared<MeshEntity>(planeMesh, grass);
 	ground->GetTransform()->SetPosition(0, 0, 0);
-	ground->GetTransform()->SetScale(100, 100, 100);
+	ground->GetTransform()->SetScale(60, 50, 60);
 	meshEntities.push_back(ground);
 }
 
@@ -364,6 +379,7 @@ void Game::Update(float deltaTime, float totalTime)
 	XMStoreFloat3(&camPos, XMVectorAdd(XMVectorScale(XMVectorAdd(XMLoadFloat3(&player->GetTransform()->GetPosition()), XMVectorAdd(XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetForward()), -6), XMVectorScale(XMLoadFloat3(&player->GetTransform()->GetUp()),3))), alpha), XMVectorScale(XMLoadFloat3(&camera->GetTransform()->GetPosition()), 1 - alpha)));
 	float yaw = player->GetTransform()->GetRotation().y * beta + camera->GetTransform()->GetRotation().y * (1 - beta);
 	camera->GetTransform()->SetPosition(camPos);
+	lights.back().position = camPos;
 	XMFLOAT3 camRot = camera->GetTransform()->GetRotation();
 	camRot.y = yaw;
 	camera->GetTransform()->SetRotation(camRot);

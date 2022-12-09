@@ -64,6 +64,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkNormals;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> barkMetalness;
 
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> birchAlbedo;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> birchRoughness;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> birchNormals;
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassAlbedo;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassRoughness;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> grassNormals;
@@ -83,6 +87,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 
 	Material* bark;
+	Material* birch;
 	Material* aluminum;
 	Material* grass;
 
